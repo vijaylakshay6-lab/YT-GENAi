@@ -1,12 +1,14 @@
-/* eslint-disable no-useless-assignment */
-import { getAllInterviewReports, generateInterviewReport, getInterviewReportById, generateResumePdf } from "../services/interview.api"
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useContext, useEffect } from "react"
-import { InterviewContext } from "../interview.context"
 import { useParams } from "react-router"
+import { getAllInterviewReports, generateInterviewReport, getInterviewReportById, generateResumePdf } from "../services/interview.api"
+import { InterviewContext } from "../interview.context"
 
+function getErrorMessage(error) {
+    return error.response?.data?.message || "Something went wrong. Please try again."
+}
 
 export const useInterview = () => {
-
     const context = useContext(InterviewContext)
     const { interviewId } = useParams()
 
@@ -14,66 +16,73 @@ export const useInterview = () => {
         throw new Error("useInterview must be used within an InterviewProvider")
     }
 
-    const { loading, setLoading, report, setReport, reports, setReports } = context
+    const { loading, setLoading, report, setReport, reports, setReports, error, setError } = context
 
     const generateReport = async ({ jobDescription, selfDescription, resumeFile }) => {
         setLoading(true)
-        let response = null
+        setError("")
+
         try {
-            response = await generateInterviewReport({ jobDescription, selfDescription, resumeFile })
+            const response = await generateInterviewReport({ jobDescription, selfDescription, resumeFile })
             setReport(response.interviewReport)
-        } catch (error) {
-            console.log(error)
+            return response.interviewReport
+        } catch (requestError) {
+            setError(getErrorMessage(requestError))
+            throw requestError
         } finally {
             setLoading(false)
         }
-
-        return response.interviewReport
     }
 
-    const getReportById = async (interviewId) => {
+    const getReportById = async (id) => {
         setLoading(true)
-        let response = null
+        setError("")
+        setReport(null)
+
         try {
-            response = await getInterviewReportById(interviewId)
+            const response = await getInterviewReportById(id)
             setReport(response.interviewReport)
-        } catch (error) {
-            console.log(error)
+            return response.interviewReport
+        } catch (requestError) {
+            setError(getErrorMessage(requestError))
+            return null
         } finally {
             setLoading(false)
         }
-        return response.interviewReport
     }
 
     const getReports = async () => {
         setLoading(true)
-        let response = null
+        setError("")
+
         try {
-            response = await getAllInterviewReports()
+            const response = await getAllInterviewReports()
             setReports(response.interviewReports)
-        } catch (error) {
-            console.log(error)
+            return response.interviewReports
+        } catch (requestError) {
+            setError(getErrorMessage(requestError))
+            return []
         } finally {
             setLoading(false)
         }
-
-        return response.interviewReports
     }
 
     const getResumePdf = async (interviewReportId) => {
         setLoading(true)
-        let response = null
+        setError("")
+
         try {
-            response = await generateResumePdf({ interviewReportId })
+            const response = await generateResumePdf({ interviewReportId })
             const url = window.URL.createObjectURL(new Blob([ response ], { type: "application/pdf" }))
             const link = document.createElement("a")
             link.href = url
-            link.setAttribute("download", `resume_${interviewReportId}.pdf`)
+            link.download = `resume_${interviewReportId}.pdf`
             document.body.appendChild(link)
             link.click()
-        }
-        catch (error) {
-            console.log(error)
+            link.remove()
+            window.URL.revokeObjectURL(url)
+        } catch (requestError) {
+            setError(getErrorMessage(requestError))
         } finally {
             setLoading(false)
         }
@@ -85,9 +94,7 @@ export const useInterview = () => {
         } else {
             getReports()
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ interviewId ])
 
-    return { loading, report, reports, generateReport, getReportById, getReports, getResumePdf }
-
+    return { loading, report, reports, error, generateReport, getReportById, getReports, getResumePdf }
 }

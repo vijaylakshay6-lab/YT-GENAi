@@ -8,6 +8,11 @@ import { login, register, logout, getMe } from "../services/auth.api";
 export const useAuth = () => {
 
     const context = useContext(AuthContext)
+
+    if (!context) {
+        throw new Error("useAuth must be used within an AuthProvider")
+    }
+
     const { user, setUser, loading, setLoading } = context
 
 
@@ -16,8 +21,7 @@ export const useAuth = () => {
         try {
             const data = await login({ email, password })
             setUser(data.user)
-        } catch (err) {
-            console.log(err)
+            return data
         } finally {
             setLoading(false)
         }
@@ -28,8 +32,7 @@ export const useAuth = () => {
         try {
             const data = await register({ username, email, password })
             setUser(data.user)
-        } catch (err) {
-            console.log(err)
+            return data
         } finally {
             setLoading(false)
         }
@@ -38,11 +41,8 @@ export const useAuth = () => {
     const handleLogout = async () => {
         setLoading(true)
         try {
-            // eslint-disable-next-line no-unused-vars
-            const data = await logout()
+            await logout()
             setUser(null)
-        } catch (err) {
-            console.log(err)
         } finally {
             setLoading(false)
         }
@@ -55,8 +55,8 @@ export const useAuth = () => {
 
                 const data = await getMe()
                 setUser(data.user)
-            } catch (err) {
-                console.log(err)
+            } catch {
+                setUser(null)
              } finally {
                 setLoading(false)
             }

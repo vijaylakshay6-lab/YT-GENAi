@@ -1,8 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import  { useState, useEffect } from 'react'
+import  { useState } from 'react'
 import '../style/interview.scss'
 import { useInterview } from '../hooks/useInterview.js'
-import {  useParams } from 'react-router'
+import { useParams } from 'react-router'
 
 
 
@@ -60,21 +59,21 @@ const RoadMapDay = ({ day }) => (
 // ── Main Component ────────────────────────────────────────────────────────────
 const Interview = () => {
     const [ activeNav, setActiveNav ] = useState('technical')
-    const { report, getReportById, loading, getResumePdf } = useInterview()
+    const { report, loading, error, getResumePdf } = useInterview()
     const { interviewId } = useParams()
 
-    useEffect(() => {
-        if (interviewId) {
-            getReportById(interviewId)
-        }
-    }, [ interviewId ])
-
-
-
-    if (loading || !report) {
+    if (loading) {
         return (
             <main className='loading-screen'>
                 <h1>Loading your interview plan...</h1>
+            </main>
+        )
+    }
+
+    if (error || !report) {
+        return (
+            <main className='loading-screen'>
+                <h1>{error || "Interview report not found."}</h1>
             </main>
         )
     }
